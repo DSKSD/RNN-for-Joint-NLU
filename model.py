@@ -24,8 +24,8 @@ class Encoder(nn.Module):
         #self.lstm.weight.data.
     
     def init_hidden(self,input):
-        hidden = Variable(torch.randn(self.n_layers*2, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.randn(self.n_layers*2, input.size(0), self.hidden_size))
-        context = Variable(torch.randn(self.n_layers*2, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.randn(self.n_layers*2, input.size(0), self.hidden_size))
+        hidden = Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size))
+        context = Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size))
         return (hidden,context)
      
     def forward(self, input,input_masking):
@@ -100,8 +100,8 @@ class Decoder(nn.Module):
         return context # B,1,D
     
     def init_hidden(self,input):
-        hidden = Variable(torch.randn(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.randn(self.n_layers*2,input.size(0), self.hidden_size))
-        context = Variable(torch.randn(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.randn(self.n_layers*2, input.size(0), self.hidden_size))
+        hidden = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2,input.size(0), self.hidden_size))
+        context = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size))
         return (hidden,context)
     
     def forward(self, input,context,encoder_outputs,encoder_maskings,training=True):
