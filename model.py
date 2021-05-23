@@ -93,15 +93,15 @@ class Decoder(nn.Module):
         attn_energies = energies.bmm(hidden).transpose(1,2) # B,T,D * B,D,1 --> B,1,T
         attn_energies = attn_energies.squeeze(1).masked_fill(encoder_maskings,-1e12) # PAD masking
         
-        alpha = F.softmax(attn_energies) # B,T
+        alpha = F.softmax(attn_energies, dim=1) # B,T
         alpha = alpha.unsqueeze(1) # B,1,T
         context = alpha.bmm(encoder_outputs) # B,1,T * B,T,D => B,1,D
         
         return context # B,1,D
     
     def init_hidden(self,input):
-        hidden = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2,input.size(0), self.hidden_size))
-        context = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*2, input.size(0), self.hidden_size))
+        hidden = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*1,input.size(0), self.hidden_size))
+        context = Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size)).cuda() if USE_CUDA else Variable(torch.zeros(self.n_layers*1, input.size(0), self.hidden_size))
         return (hidden,context)
     
     def forward(self, input,context,encoder_outputs,encoder_maskings,training=True):
@@ -128,7 +128,7 @@ class Decoder(nn.Module):
 
             concated = torch.cat((hidden[0],context.transpose(0,1)),2)
             score = self.slot_out(concated.squeeze(0))
-            softmaxed = F.log_softmax(score)
+            softmaxed = F.log_softmax(score, dim=1)
             decode.append(softmaxed)
             _,input = torch.max(softmaxed,1)
             embedded = self.embedding(input.unsqueeze(1))

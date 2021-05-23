@@ -42,8 +42,9 @@ def train(config):
             x = torch.cat(x)
             tag_target = torch.cat(y_1)
             intent_target = torch.cat(y_2)
-            x_mask = torch.cat([Variable(torch.ByteTensor(tuple(map(lambda s: s ==0, t.data)))).cuda() if USE_CUDA else Variable(torch.ByteTensor(tuple(map(lambda s: s ==0, t.data)))) for t in x]).view(config.batch_size,-1)
-            y_1_mask = torch.cat([Variable(torch.ByteTensor(tuple(map(lambda s: s ==0, t.data)))).cuda() if USE_CUDA else Variable(torch.ByteTensor(tuple(map(lambda s: s ==0, t.data)))) for t in tag_target]).view(config.batch_size,-1)
+            
+            x_mask = torch.cat([torch.tensor(tuple(map(lambda s: s ==0, t.data)), dtype=torch.bool) for t in x])
+            x_mask = x_mask.view(config.batch_size,-1)
 
             encoder.zero_grad()
             decoder.zero_grad()
@@ -57,11 +58,11 @@ def train(config):
             loss_2 = loss_function_2(intent_score,intent_target)
 
             loss = loss_1+loss_2
-            losses.append(loss.data.cpu().numpy()[0] if USE_CUDA else loss.data.numpy()[0])
+            losses.append(loss.data.cpu().numpy().item() if USE_CUDA else loss.data.numpy().item())
             loss.backward()
 
-            torch.nn.utils.clip_grad_norm(encoder.parameters(), 5.0)
-            torch.nn.utils.clip_grad_norm(decoder.parameters(), 5.0)
+            torch.nn.utils.clip_grad_norm_(encoder.parameters(), 5.0)
+            torch.nn.utils.clip_grad_norm_(decoder.parameters(), 5.0)
 
             enc_optim.step()
             dec_optim.step()
