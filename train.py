@@ -39,9 +39,9 @@ def train(config):
         losses=[]
         for i, batch in enumerate(getBatch(config.batch_size,train_data)):
             x,y_1,y_2 = zip(*batch)
-            x = torch.cat(x)
-            tag_target = torch.cat(y_1)
-            intent_target = torch.cat(y_2)
+            x = torch.cat(x).cuda() if USE_CUDA else torch.cat(x)
+            tag_target = torch.cat(y_1).cuda() if USE_CUDA else torch.cat(y_1)
+            intent_target = torch.cat(y_2).cuda() if USE_CUDA else torch.cat(y_2)
             
             x_mask = torch.cat([torch.tensor(tuple(map(lambda s: s ==0, t.data)), dtype=torch.bool) for t in x])
             x_mask = x_mask.view(config.batch_size,-1)

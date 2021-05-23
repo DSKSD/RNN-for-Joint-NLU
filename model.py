@@ -85,6 +85,7 @@ class Decoder(nn.Module):
         """
         
         hidden = hidden.squeeze(0).unsqueeze(2)  # 히든 : (1,배치,차원) -> (배치,차원,1)
+        encoder_maskings = encoder_maskings.cuda() if USE_CUDA else encoder_maskings
         
         batch_size = encoder_outputs.size(0) # B
         max_len = encoder_outputs.size(1) # T
