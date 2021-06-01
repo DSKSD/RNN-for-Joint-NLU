@@ -70,9 +70,11 @@ def train(config):
             enc_optim.step()
             dec_optim.step()
             if i % 100==0:
-                f1_tag_score, intent_accuracy = evaluate(encoder, decoder, word2index, validation_data,
-                                                         config.batch_size)
-                print("Step", step, " epoch", i, " : ", np.mean(losses), ", tag F1 score: ", f1_tag_score, ", intent accuracy: ", intent_accuracy)
+                eval_losses, f1_tag_score, intent_accuracy = evaluate(encoder, decoder, word2index, validation_data,
+                                                               config.batch_size)
+                print("Step", step, " epoch", i, ". train_loss: ",
+                      np.mean(losses), "eval_loss: ", np.mean(eval_losses), ", tag F1 score: ",
+                      f1_tag_score, ", intent accuracy: ", intent_accuracy)
                 losses=[]
 
     if not os.path.exists(config.model_dir):

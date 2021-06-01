@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.autograd import Variable
 from sklearn.metrics import f1_score, accuracy_score
 from data import getBatch
@@ -14,6 +15,11 @@ def evaluate(encoder, decoder, word2index, data, batch_size):
 
     intent_truths = []
     intent_predictions = []
+
+    loss_function_1 = nn.CrossEntropyLoss(ignore_index=0)
+    loss_function_2 = nn.CrossEntropyLoss()
+
+    losses=[]
 
     with torch.no_grad():
         for batch in getBatch(batch_size, data):
@@ -31,6 +37,12 @@ def evaluate(encoder, decoder, word2index, data, batch_size):
                 if use_cuda else Variable(torch.LongTensor([[word2index['<SOS>']] * batch_size])).transpose(1, 0)
 
             tag_score, intent_score = decoder(start_decode, hidden_c, output, x_mask)
+
+            loss_1 = loss_function_1(tag_score,tag_target.view(-1))
+            loss_2 = loss_function_2(intent_score,intent_target)
+
+            loss = loss_1+loss_2
+            losses.append(loss.data.cpu().numpy().item()) 
 
             # get predicted tags
             _, predicted_tag_indices = torch.max(tag_score, 1)
@@ -54,4 +66,4 @@ def evaluate(encoder, decoder, word2index, data, batch_size):
     intent_accuracy = accuracy_score(torch.flatten(torch.stack(intent_truths)), torch.flatten(torch.stack(intent_predictions)))
     encoder.train()
     decoder.train()
-    return f1_tag_score, intent_accuracy
+    return losses, f1_tag_score, intent_accuracy
