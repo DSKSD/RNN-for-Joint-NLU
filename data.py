@@ -17,21 +17,10 @@ def prepare_sequence(seq, to_ix):
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def preprocessing(file_path,length):
+def preprocessing(file_path, length):
     """
     atis-2.train.w-intent.iob
     """
-    
-    processed_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"data/")
-    print("processed_data_path : %s" % processed_path)
-
-    if os.path.exists(os.path.join(processed_path,"processed_train_data.pkl")):
-        train_data, word2index, tag2index, intent2index = pickle.load(open(os.path.join(processed_path,"processed_train_data.pkl"),"rb"))
-        return train_data, word2index, tag2index, intent2index
-                                  
-    if not os.path.exists(processed_path):
-        os.makedirs(processed_path)
-    
     try:
         train = open(file_path,"r").readlines()
         print("Successfully load data. # of set : %d " % len(train))
@@ -108,9 +97,6 @@ def preprocessing(file_path,length):
         temp3 = Variable(torch.LongTensor([intent2index[tr[2]]])).cuda() if USE_CUDA else Variable(torch.LongTensor([intent2index[tr[2]]]))
 
         train_data.append((temp,temp2,temp3))
-    
-    pickle.dump((train_data,word2index,tag2index,intent2index),open(os.path.join(processed_path,"processed_train_data.pkl"),"wb"))
-    pickle
     print("Preprocessing complete!")
               
     return train_data, word2index, tag2index, intent2index
