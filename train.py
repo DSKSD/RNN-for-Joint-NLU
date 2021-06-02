@@ -16,9 +16,9 @@ USE_CUDA = torch.cuda.is_available()
 
 
 def train(config):
-    validation_data, _, _, _ = preprocessing(config.validation_set_file_path, config.max_length)
-    test_data, _, _, _ = preprocessing(config.test_set_file_path, config.max_length)
-    train_data, word2index, tag2index, intent2index = preprocessing(config.file_path,config.max_length)
+    train_data, word2index, tag2index, intent2index = preprocessing(config.file_path, config.max_length)
+    validation_data, _, _, _ = preprocessing(config.validation_set_file_path, config.max_length, word2index, tag2index, intent2index)
+    test_data, _, _, _ = preprocessing(config.test_set_file_path, config.max_length, word2index, tag2index, intent2index)
 
     if train_data==None:
         print("Please check your data or its path")
