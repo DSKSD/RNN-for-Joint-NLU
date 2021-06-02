@@ -85,7 +85,7 @@ def train(config):
     print("Train Complete!")
 
     print("Evaluating on test data")
-    test_f1_tag_score, test_intent_accuracy = evaluate(encoder, decoder, word2index, test_data,
+    _, test_f1_tag_score, test_intent_accuracy = evaluate(encoder, decoder, word2index, test_data,
                                              config.batch_size)
     print("Tag F1 score: ", test_f1_tag_score, ", intent accuracy: ", test_intent_accuracy)
 
