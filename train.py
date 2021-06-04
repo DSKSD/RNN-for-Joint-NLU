@@ -10,17 +10,20 @@ import argparse
 import numpy as np
 from data import *
 from model import Encoder,Decoder
+from evalutate import evaluate
 
 USE_CUDA = torch.cuda.is_available()
 
+
 def train(config):
-    
-    train_data, word2index, tag2index, intent2index = preprocessing(config.file_path,config.max_length)
-    
+    train_data, word2index, tag2index, intent2index = preprocessing(config.file_path, config.max_length)
+    validation_data, _, _, _ = preprocessing(config.validation_set_file_path, config.max_length, word2index, tag2index, intent2index)
+    test_data, _, _, _ = preprocessing(config.test_set_file_path, config.max_length, word2index, tag2index, intent2index)
+
     if train_data==None:
         print("Please check your data or its path")
         return
-    
+
     encoder = Encoder(len(word2index),config.embedding_size,config.hidden_size)
     decoder = Decoder(len(tag2index),len(intent2index),len(tag2index)//3,config.hidden_size*2)
     if USE_CUDA:
@@ -34,7 +37,7 @@ def train(config):
     loss_function_2 = nn.CrossEntropyLoss()
     enc_optim= optim.Adam(encoder.parameters(), lr=config.learning_rate)
     dec_optim = optim.Adam(decoder.parameters(),lr=config.learning_rate)
-    
+
     for step in range(config.step_size):
         losses=[]
         for i, batch in enumerate(getBatch(config.batch_size,train_data)):
@@ -42,7 +45,7 @@ def train(config):
             x = torch.cat(x).cuda() if USE_CUDA else torch.cat(x)
             tag_target = torch.cat(y_1).cuda() if USE_CUDA else torch.cat(y_1)
             intent_target = torch.cat(y_2).cuda() if USE_CUDA else torch.cat(y_2)
-            
+
             x_mask = torch.cat([torch.tensor(tuple(map(lambda s: s ==0, t.data)), dtype=torch.bool) for t in x])
             x_mask = x_mask.view(config.batch_size,-1)
 
@@ -66,23 +69,35 @@ def train(config):
 
             enc_optim.step()
             dec_optim.step()
-
             if i % 100==0:
-                print("Step",step," epoch",i," : ",np.mean(losses))
+                eval_losses, f1_tag_score, intent_accuracy = evaluate(encoder, decoder, word2index, validation_data,
+                                                               config.batch_size)
+                print("Step", step, " epoch", i, ". train_loss: ",
+                      np.mean(losses), "eval_loss: ", np.mean(eval_losses), ", tag F1 score: ",
+                      f1_tag_score, ", intent accuracy: ", intent_accuracy)
                 losses=[]
-    
+
     if not os.path.exists(config.model_dir):
         os.makedirs(config.model_dir)
-    
+
     torch.save(decoder.state_dict(),os.path.join(config.model_dir,'jointnlu-decoder.pkl'))
     torch.save(encoder.state_dict(),os.path.join(config.model_dir, 'jointnlu-encoder.pkl'))
     print("Train Complete!")
-    
-                
+
+    print("Evaluating on test data")
+    _, test_f1_tag_score, test_intent_accuracy = evaluate(encoder, decoder, word2index, test_data,
+                                             config.batch_size)
+    print("Tag F1 score: ", test_f1_tag_score, ", intent accuracy: ", test_intent_accuracy)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_path', type=str, default='./data/atis-2.train.w-intent.iob' ,
-                        help='path of train data')
+                        help='path to the train data')
+    parser.add_argument('--validation_set_file_path', type=str, default='./data/atis-2.dev.w-intent.iob' ,
+                        help='path to the validation data')
+    parser.add_argument('--test_set_file_path', type=str, default='./data/atis.test.w-intent.iob' ,
+                        help='path to the test data')
     parser.add_argument('--model_dir', type=str, default='./models/' ,
                         help='path for saving trained models')
 
@@ -95,7 +110,7 @@ if __name__ == '__main__':
                         help='dimension of lstm hidden states')
     parser.add_argument('--num_layers', type=int , default=1 ,
                         help='number of layers in lstm')
-    
+
     parser.add_argument('--step_size', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--learning_rate', type=float, default=0.001)

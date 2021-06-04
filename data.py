@@ -17,21 +17,10 @@ def prepare_sequence(seq, to_ix):
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
-def preprocessing(file_path,length):
+def preprocessing(file_path, length, word2index=None, tag2index=None, intent2index=None):
     """
     atis-2.train.w-intent.iob
     """
-    
-    processed_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"data/")
-    print("processed_data_path : %s" % processed_path)
-
-    if os.path.exists(os.path.join(processed_path,"processed_train_data.pkl")):
-        train_data, word2index, tag2index, intent2index = pickle.load(open(os.path.join(processed_path,"processed_train_data.pkl"),"rb"))
-        return train_data, word2index, tag2index, intent2index
-                                  
-    if not os.path.exists(processed_path):
-        os.makedirs(processed_path)
-    
     try:
         train = open(file_path,"r").readlines()
         print("Successfully load data. # of set : %d " % len(train))
@@ -76,21 +65,24 @@ def preprocessing(file_path,length):
             temp = temp[:length]
             temp[-1]='<EOS>'
         sout.append(temp)
-              
-    word2index = {'<PAD>': 0, '<UNK>':1,'<SOS>':2,'<EOS>':3}
-    for token in vocab:
-        if token not in word2index.keys():
-            word2index[token]=len(word2index)
 
-    tag2index = {'<PAD>' : 0}
-    for tag in slot_tag:
-        if tag not in tag2index.keys():
-            tag2index[tag] = len(tag2index)
+    if not word2index:
+        word2index = {'<PAD>': 0, '<UNK>':1,'<SOS>':2,'<EOS>':3}
+        for token in vocab:
+            if token not in word2index.keys():
+                word2index[token]=len(word2index)
 
-    intent2index={}
-    for ii in intent_tag:
-        if ii not in intent2index.keys():
-            intent2index[ii] = len(intent2index)
+    if not tag2index:
+        tag2index = {'<PAD>': 0, '<UNK>': 1}
+        for tag in slot_tag:
+            if tag not in tag2index.keys():
+                tag2index[tag] = len(tag2index)
+
+    if not intent2index:
+        intent2index={'<UNK>': 0}
+        for ii in intent_tag:
+            if ii not in intent2index.keys():
+                intent2index[ii] = len(intent2index)
 
               
     train = list(zip(sin,sout,intent))
@@ -104,15 +96,12 @@ def preprocessing(file_path,length):
 
         temp2 = prepare_sequence(tr[1],tag2index)
         temp2 = temp2.view(1,-1)
-
-        temp3 = Variable(torch.LongTensor([intent2index[tr[2]]])).cuda() if USE_CUDA else Variable(torch.LongTensor([intent2index[tr[2]]]))
+        intent_index = intent2index[tr[2]] if tr[2] in intent2index.keys() else intent2index['<UNK>']
+        temp3 = Variable(torch.LongTensor([intent_index])).cuda() if USE_CUDA else Variable(torch.LongTensor([intent_index]))
 
         train_data.append((temp,temp2,temp3))
-    
-    pickle.dump((train_data,word2index,tag2index,intent2index),open(os.path.join(processed_path,"processed_train_data.pkl"),"wb"))
-    pickle
+
     print("Preprocessing complete!")
-              
     return train_data, word2index, tag2index, intent2index
               
               
